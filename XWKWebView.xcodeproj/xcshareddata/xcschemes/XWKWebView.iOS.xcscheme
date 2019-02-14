@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "3EB0863522160BA300F57167"
-               BuildableName = "XWKWebView_iOS.framework"
+               BuildableName = "XWKWebView.framework"
                BlueprintName = "XWKWebView.iOS"
                ReferencedContainer = "container:XWKWebView.xcodeproj">
             </BuildableReference>
@@ -46,7 +46,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "3EB0863522160BA300F57167"
-            BuildableName = "XWKWebView_iOS.framework"
+            BuildableName = "XWKWebView.framework"
             BlueprintName = "XWKWebView.iOS"
             ReferencedContainer = "container:XWKWebView.xcodeproj">
          </BuildableReference>
@@ -64,7 +64,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "3EB0863522160BA300F57167"
-            BuildableName = "XWKWebView_iOS.framework"
+            BuildableName = "XWKWebView.framework"
             BlueprintName = "XWKWebView.iOS"
             ReferencedContainer = "container:XWKWebView.xcodeproj">
          </BuildableReference>

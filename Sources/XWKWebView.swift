@@ -20,10 +20,7 @@ public class XWKWebView: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
         super.init()
         
         //inject html
-        let bundle = Bundle.main
-        /*if let url = bundle.url(forResource: "index", withExtension: "html") {
-         webView.loadFileURL(url, allowingReadAccessTo: bundle.resourceURL!)
-         }*/
+        let bundle = Bundle(for: XWKWebView.self)        
         //inject bridge.js
         guard let path = bundle.path(forResource: "bridge", ofType: "js"),
             let source = try? NSString(contentsOfFile: path, encoding: String.Encoding.utf8.rawValue) else {
