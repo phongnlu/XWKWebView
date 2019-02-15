@@ -130,19 +130,19 @@ extension XWKWebView {
         """
         window['\(namespace)'] = window['\(namespace)'] || {};
         window['\(namespace)'].\(fn) = function(payload) {
-        return new Promise(function(resolve, reject) {
-        var promiseId = webkit.messageHandlers.XWKWebView.generateUUID();
-        webkit.messageHandlers.XWKWebView.promises[promiseId] = { resolve, reject };
-        var dataToSend = {};
-        dataToSend.payload = payload;
-        dataToSend.namespace = '\(namespace)';
-        dataToSend.method = '\(name)';
-        dataToSend.promiseId = promiseId;
-        var jsonString = (JSON.stringify(dataToSend));
-        try {
-        webkit.messageHandlers.\(webkitNamespace).postMessage(jsonString);
-        } catch(e) { console.log(e) }
-        });
+            return new Promise(function(resolve, reject) {
+                var promiseId = webkit.messageHandlers.XWKWebView.generateUUID();
+                webkit.messageHandlers.XWKWebView.promises[promiseId] = { resolve, reject };
+                var dataToSend = {};
+                dataToSend.payload = payload;
+                dataToSend.namespace = '\(namespace)';
+                dataToSend.method = '\(name)';
+                dataToSend.promiseId = promiseId;
+                var jsonString = (JSON.stringify(dataToSend));
+                try {
+                    webkit.messageHandlers.\(webkitNamespace).postMessage(jsonString);
+                } catch(e) { console.log(e) }
+            });
         };
         """
         
