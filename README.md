@@ -33,7 +33,7 @@ There's an example project [XWKWebViewDemo](https://github.com/phongnlu/XWKWebVi
 
 ## Usage
 
-- Register plugin
+- Register plugin 
 
 ```swift
 let webView = WKWebView(frame: view.frame)
