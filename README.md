@@ -29,7 +29,7 @@ There's an example project [XWKWebViewDemo](https://github.com/phongnlu/XWKWebVi
 > scripts/build
 ```
 
-[Carthage required](https://github.com/Carthage/Carthage)
+Note: [Carthage required](https://github.com/Carthage/Carthage)
 
 ## Usage
 
