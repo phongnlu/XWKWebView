@@ -84,7 +84,8 @@ let xwebview = XWKWebView(webView);
 xwebview.invokeJs("window.invokeFromNative(nativePayload)",
     onSuccess: { payload in
         print("invokeJs onSuccess payload: \(payload)")
-    }, onFailure: { error in
+    },
+    onFailure: { error in
         print("invokeJs onFailure error: \(error)")
     })
 ```
