@@ -35,7 +35,7 @@ There's an example project [XWKWebViewDemo](https://github.com/phongnlu/XWKWebVi
 
 Note: [Carthage required](https://github.com/Carthage/Carthage)
 
-## Usage
+## From JS to Native
 
 - Register plugin 
 
@@ -71,5 +71,32 @@ public class MyPlugin: NSObject {
         // let nativePayload = "{\"data\": \"something is wrong\"}"
         // promise.reject(nativePayload)
     }
+}
+```
+
+## From Native to JS
+
+- Invoke JS
+
+```swift
+let webView = WKWebView(frame: view.frame)
+let xwebview = XWKWebView(webView);
+xwebview.invokeJs("window.invokeFromNative(nativePayload)",
+    onSuccess: { payload in
+        print("invokeJs onSuccess payload: \(payload)")
+    }, onFailure: { error in
+        print("invokeJs onFailure error: \(error)")
+    })
+```
+
+- window.invokeFromNative defined as
+
+```javascript
+window.invokeFromNative = function(nativePayload) {
+    console.log(nativePayload);
+    return new Promise(function(resolve, reject) {
+        resolve({"result": "this result comes from web"});
+        //reject("error": "this error comes from web"});
+    });
 }
 ```
