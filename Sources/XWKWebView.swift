@@ -10,8 +10,12 @@ import WebKit
 
 public class XWKWebView: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
     private let webkitNamespace = "XWKWebView"
+    private let webkitNamespaceForInvokeJs = "XWKWebViewInvokeJs"
     private var webView: WKWebView
     private var pluginObjRef = Dictionary<String, AnyObject>()
+    public typealias invokeJsCallback = (_ payload: AnyObject?) -> Void
+    public var invokeJsCallbackSuccessArr = Dictionary<String, invokeJsCallback>()
+    public var invokeJsCallbackFailureArr = Dictionary<String, invokeJsCallback>()
     public static var enableLogging = true
     
     public init(_ webView: WKWebView) {
@@ -33,6 +37,8 @@ public class XWKWebView: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
         
         //inject js to native bridge
         userContentController.add(self, name: webkitNamespace)
+        //expose js namespace to execute js call from native
+        userContentController.add(self, name: webkitNamespaceForInvokeJs)
     }
     
     public func registerPlugin(_ obj: AnyObject, namespace: String) {
@@ -40,7 +46,9 @@ public class XWKWebView: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
         
         let js =
         """
-        window['\(namespace)'] = window['\(namespace)'] || {};
+        (function() {
+            window['\(namespace)'] = window['\(namespace)'] || {};
+        })();
         """
         webView.evaluateJavaScript(js, completionHandler: { (result, error) in
             XWKWebViewUtil.log("plugin js namespace successfully injected: \(namespace)")
@@ -57,9 +65,50 @@ public class XWKWebView: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
         }
     }
     
+    public func invokeJs(_ js: String, onSuccess: @escaping invokeJsCallback, onFailure: @escaping invokeJsCallback) {
+        let promiseId = UUID().uuidString
+        invokeJsCallbackSuccessArr[promiseId] = onSuccess
+        invokeJsCallbackFailureArr[promiseId] = onFailure
+        
+        let js =
+        """
+        (function() {
+            var dataToSend = {};
+            dataToSend.promiseId = '\(promiseId)';
+        
+            if (typeof \(js) === 'undefined') {
+                console.log('\(js) undefined');
+                return;
+            }
+        
+            \(js)
+            .then(function(result) {
+                dataToSend.payload = result;
+                dataToSend.promiseType = 'resolve';
+                var jsonString = (JSON.stringify(dataToSend));
+                try {
+                    webkit.messageHandlers.\(webkitNamespaceForInvokeJs).postMessage(jsonString);
+                } catch(e) { console.log(e) }
+            })
+            .catch(function(error) {
+                dataToSend.payload = error;
+                dataToSend.promiseType = 'reject';
+                var jsonString = (JSON.stringify(dataToSend));
+                try {
+                    webkit.messageHandlers.\(webkitNamespaceForInvokeJs).postMessage(jsonString);
+                } catch(e) { console.log(e) }
+            });
+        })();
+        """
+        
+        webView.evaluateJavaScript(js, completionHandler: { (result, error) in
+            XWKWebViewUtil.log("js function invoked successfully: \(js)")
+        })
+    }
+    
     public func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         if (message.name == webkitNamespace) {
-            XWKWebViewUtil.log("postMessageHandler payload: \(message.body)")
+            XWKWebViewUtil.log("postMessageHandler payload of \(webkitNamespace): \(message.body)")
             if let body = message.body as? String {
                 do {
                     if let json = body.data(using: String.Encoding.utf8) {
@@ -79,6 +128,36 @@ public class XWKWebView: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
                                 }
                             } else {
                                 XWKWebViewUtil.log("No obj ref found")
+                            }
+                        }
+                    }
+                } catch {
+                    XWKWebViewUtil.log(error)
+                }
+            } else {
+                XWKWebViewUtil.log("failed to parse json")
+            }
+        } else if (message.name == webkitNamespaceForInvokeJs) {
+            XWKWebViewUtil.log("postMessageHandler payload of \(webkitNamespaceForInvokeJs): \(message.body)")
+            if let body = message.body as? String {
+                do {
+                    if let json = body.data(using: String.Encoding.utf8) {
+                        if let jsonData = try JSONSerialization.jsonObject(with: json, options: .allowFragments) as? [String: AnyObject] {
+                            let promiseId = jsonData["promiseId"] as! String
+                            let promiseType = jsonData["promiseType"] as! String
+                            let payload = jsonData["payload"]
+                            
+                            if let successCallback = invokeJsCallbackSuccessArr[promiseId],
+                                let failureCallback = invokeJsCallbackFailureArr[promiseId] {
+                                if promiseType == "resolve" {
+                                    successCallback(payload)
+                                } else if promiseType == "reject" {
+                                    failureCallback(payload)
+                                }
+                                invokeJsCallbackSuccessArr.removeValue(forKey: promiseId)
+                                invokeJsCallbackFailureArr.removeValue(forKey: promiseId)
+                            } else {
+                                XWKWebViewUtil.log("no success/failure callback specified")
                             }
                         }
                     }
@@ -128,22 +207,24 @@ extension XWKWebView {
         let fn = name.replacingOccurrences(of: ":", with: "")
         let js =
         """
-        window['\(namespace)'] = window['\(namespace)'] || {};
-        window['\(namespace)'].\(fn) = function(payload) {
-            return new Promise(function(resolve, reject) {
-                var promiseId = webkit.messageHandlers.XWKWebView.generateUUID();
-                webkit.messageHandlers.XWKWebView.promises[promiseId] = { resolve, reject };
-                var dataToSend = {};
-                dataToSend.payload = payload;
-                dataToSend.namespace = '\(namespace)';
-                dataToSend.method = '\(name)';
-                dataToSend.promiseId = promiseId;
-                var jsonString = (JSON.stringify(dataToSend));
-                try {
-                    webkit.messageHandlers.\(webkitNamespace).postMessage(jsonString);
-                } catch(e) { console.log(e) }
-            });
-        };
+        (function() {
+            window['\(namespace)'] = window['\(namespace)'] || {};
+            window['\(namespace)'].\(fn) = function(payload) {
+                return new Promise(function(resolve, reject) {
+                    var promiseId = webkit.messageHandlers.\(webkitNamespace).generateUUID();
+                    webkit.messageHandlers.\(webkitNamespace).promises[promiseId] = { resolve, reject };
+                    var dataToSend = {};
+                    dataToSend.payload = payload;
+                    dataToSend.namespace = '\(namespace)';
+                    dataToSend.method = '\(name)';
+                    dataToSend.promiseId = promiseId;
+                    var jsonString = (JSON.stringify(dataToSend));
+                    try {
+                        webkit.messageHandlers.\(webkitNamespace).postMessage(jsonString);
+                    } catch(e) { console.log(e) }
+                });
+            };
+        })();
         """
         
         webView.evaluateJavaScript(js, completionHandler: { (result, error) in
