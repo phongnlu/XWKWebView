@@ -4,6 +4,10 @@ XWKWebView is a library that enhance the communication between Javascript and na
 
 ## How it works
 
+![XWKWebView](docs/XWKWebView.png?raw=true "XWKWebView")
+
+XWKWebView provides true bi-directional binding between JS and Native, and the binding resolution is built on top of modern concept of [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)
+
 To simplify things, XWKWebView maps all declared methods of a Swift object to Javascript methods of a namespace, essentially allows plugging in Swift code to fully scoped JS namespace. The exposed JS object can then be called from typical webapp.
 
 ## Features
