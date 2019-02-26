@@ -11,7 +11,7 @@ import WebKit
 public class XWKWebView: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
     private let webkitNamespace = "XWKWebView"
     private let webkitNamespaceForInvokeJs = "XWKWebViewInvokeJs"
-    private var webView: WKWebView
+    public var webView: WKWebView
     private var pluginObjRef = Dictionary<String, AnyObject>()
     public typealias invokeJsCallback = (_ payload: AnyObject?) -> Void
     public var invokeJsCallbackSuccessArr = Dictionary<String, invokeJsCallback>()
